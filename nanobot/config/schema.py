@@ -20,6 +20,12 @@ class TelegramConfig(BaseModel):
     allow_from: list[str] = Field(default_factory=list)  # Allowed user IDs or usernames
     proxy: str | None = None  # HTTP/SOCKS5 proxy URL, e.g. "http://127.0.0.1:7890" or "socks5://127.0.0.1:1080"
 
+class WebSocketConfig(BaseModel):
+    """WebSocket channel configuration for browser-based chat."""
+    enabled: bool = False
+    host: str = "0.0.0.0"
+    port: int = 8765
+    allow_from: list[str] = Field(default_factory=list) 
 
 class FeishuConfig(BaseModel):
     """Feishu/Lark channel configuration using WebSocket long connection."""
@@ -153,6 +159,8 @@ class ChannelsConfig(BaseModel):
     email: EmailConfig = Field(default_factory=EmailConfig)
     slack: SlackConfig = Field(default_factory=SlackConfig)
     qq: QQConfig = Field(default_factory=QQConfig)
+    websocket: WebSocketConfig = Field(default_factory=WebSocketConfig) 
+
 
 
 class AgentDefaults(BaseModel):

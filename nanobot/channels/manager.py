@@ -34,6 +34,17 @@ class ChannelManager:
     def _init_channels(self) -> None:
         """Initialize channels based on config."""
         
+        # WebSocket channel
+        if self.config.channels.websocket.enabled:
+            try:
+                from nanobot.channels.websocket import WebSocketChannel
+                self.channels["websocket"] = WebSocketChannel(
+                    self.config.channels.websocket, self.bus
+                )
+                logger.info("WebSocket channel enabled")
+            except ImportError as e:
+                logger.warning(f"WebSocket channel not available: {e}")
+
         # Telegram channel
         if self.config.channels.telegram.enabled:
             try:
