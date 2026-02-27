@@ -13,6 +13,8 @@ from nanobot.bus.queue import MessageBus
 from nanobot.channels.base import BaseChannel
 from nanobot.config.schema import BaseModel
 
+
+
 class WebSocketChannel(BaseChannel):
     """WebSocket channel for browser-based chat interface."""
     
@@ -42,8 +44,9 @@ class WebSocketChannel(BaseChannel):
                 connection_handler,
                 self.config.host,
                 self.config.port,
-                ping_interval=30,
-                ping_timeout=10
+                ping_interval=20,   # Ping every 20 seconds
+                ping_timeout=120,   # Wait up to 2 minutes for pong (for slow LLM)
+                close_timeout=10
             ):
                 logger.info(
                     f"✅ WebSocket channel listening on "
@@ -165,17 +168,21 @@ class WebSocketChannel(BaseChannel):
                 
                 logger.info(f"WebSocket message from {client_ip}: {content[:100]}")
                 
-                # Forward to message bus using the base class method
-                await self._handle_message(
-                    sender_id=client_ip,
-                    chat_id=session_id,
-                    content=content,
-                    media=data.get("media", []),
-                    metadata={
-                        "websocket_id": id(websocket),
-                        "client_ip": client_ip,
-                        **data.get("metadata", {})
-                    }
+                # CRITICAL: Use background task to prevent blocking the WebSocket connection
+                # This allows the WebSocket to continue receiving pings while the agent
+                # processes the message (which might take a long time if calling LLM)
+                asyncio.create_task(
+                    self._handle_message(
+                        sender_id=client_ip,
+                        chat_id=session_id,
+                        content=content,
+                        media=data.get("media", []),
+                        metadata={
+                            "websocket_id": id(websocket),
+                            "client_ip": client_ip,
+                            **data.get("metadata", {})
+                        }
+                    )
                 )
                 
             elif message_type == "ping":
